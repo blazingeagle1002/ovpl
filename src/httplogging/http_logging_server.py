@@ -13,11 +13,31 @@ import tornado.httpserver
 from tornado.options import define, options
 
 from __init__ import *
-from utils.envsetup import EnvSetUp
+from src.utils.envsetup import *
 import httplogging.helper as helper
+
+import tornado.websocket
+import socket
 
 define("port", default=8239, help="run on the given port", type=int)
 
+
+class WebSHandler(tornado.websocket.WebSocketHandler):
+    def open(self):
+        print 'connection opened'
+        
+        #override this method to define the action to be performed on receiving a message from client 
+    def on_message(self, message):
+        pass
+      # override this method to define the action send someting to the client 
+    def write_message(self, message):
+        pass
+    
+    def on_close(self):
+        print 'connection closed'
+
+    def check_origin(self, origin):
+        return True
 
 class LogHandler(tornado.web.RequestHandler):
     def get(self):
