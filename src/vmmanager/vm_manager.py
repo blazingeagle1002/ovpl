@@ -67,20 +67,29 @@ def test_lab(lab_src_url, version=None):
     logger.info("Environment http_proxy = %s" % os.environ["http_proxy"])
     logger.info("Environment https_proxy = %s" % os.environ["https_proxy"])
 
-    def fill_aptconf():
-
-        try:
-            http_proxy = os.environ["http_proxy"]
-            https_proxy = os.environ["https_proxy"]
-            http_cmd = r'echo "Acquire::http::Proxy \"%s\";"%s' % (http_proxy, '>>/etc/apt/apt.conf')
-            https_cmd = r'echo "Acquire::https::Proxy \"%s\";"%s' % (https_proxy, '>>/etc/apt/apt.conf')
-            (ret_code, output) = execute_command(http_cmd)
-            (ret_code, output) = execute_command(https_cmd)
-        except Exception, e:
-            logger.error("Writing to /etc/apt/apt.conf failed with error: %s"
-                         % (str(e)))
-            raise e
-
+    def fill_aptconf(lab_spec):
+        os = str(lab_spec['lab']['runtime_requirements']['platform']['os'])
+        http_proxy = os.environ["http_proxy"]
+        https_proxy = os.environ["https_proxy"]
+        if os == "ubuntu":
+            try:                
+                http_cmd = r'echo "Acquire::http::Proxy \"%s\";"%s' % (http_proxy, '>>/etc/apt/apt.conf')
+                https_cmd = r'echo "Acquire::https::Proxy \"%s\";"%s' % (https_proxy, '>>/etc/apt/apt.conf')
+                (ret_code, output) = execute_command(http_cmd)
+                (ret_code, output) = execute_command(https_cmd)
+            except Exception, e:
+                logger.error("Writing to /etc/apt/apt.conf failed with error: %s"
+                             % (str(e)))
+                raise e
+        else:
+            try:
+                http_cmd = r'echo "proxy="%s' % (http_proxy, '>>/etc/yum.conf')
+                (ret_code, output) = execute_command(http_cmd)
+            except Exception, e:
+                logger.error("Writing to /etc/yum.conf failed with error: %s"
+                             % (str(e)))
+                raise e
+            
     def get_build_steps_spec(lab_spec):
         return {"build_steps": lab_spec['lab']['build_requirements']['platform']['build_steps']}
 
@@ -96,12 +105,13 @@ def test_lab(lab_src_url, version=None):
     logger.info("Starting test_lab")
 
     try:
-        fill_aptconf()
+
         repo_name = git.construct_repo_name(lab_src_url)
         lab_spec = git.get_lab_spec(repo_name)
         spec_path = git.get_spec_path(repo_name)
         logger.debug("spec_path: %s" % spec_path)
         os.chdir(spec_path)
+        fill_aptconf(lab_spec)
         logger.debug("Changed to Diretory: %s" % spec_path)
         logger.debug("CWD: %s" % str(os.getcwd()))
 

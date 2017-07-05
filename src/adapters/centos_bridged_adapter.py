@@ -68,11 +68,17 @@ class CentOSBridgeVZAdapter(object):
     template file with the container IP_ADDRESS and then copying it to
     /etc/network/interfaces.
     """
-    def prepare_vm_for_bridged_network(self, vm_id):
-        src_file = base_adapter.OVPL_DIR_PATH + \
-            config.BRIDGE_NETWORK_SETUP_PATH + "bridge-settings"
-        dest_file = base_adapter.OVPL_DIR_PATH + \
-            config.BRIDGE_NETWORK_SETUP_PATH + "interfaces"
+    def prepare_vm_for_bridged_network(self, vm_id, os):
+        if os == "ubuntu":
+            src_file = base_adapter.OVPL_DIR_PATH + \
+                       config.BRIDGE_NETWORK_SETUP_PATH + "bridge-settings"
+            dest_file = base_adapter.OVPL_DIR_PATH + \
+                        config.BRIDGE_NETWORK_SETUP_PATH + "interfaces"
+        else:
+            src_file = base_adapter.OVPL_DIR_PATH + \
+                       config.BRIDGE_NETWORK_SETUP_PATH + "centos-interfaces"
+            dest_file = base_adapter.OVPL_DIR_PATH + \
+                        config.BRIDGE_NETWORK_SETUP_PATH + "ifcfg-eth0-interfaces"
 
         try:
             copy_command = "rsync -arz --progress " + src_file + " " + dest_file
@@ -95,11 +101,17 @@ class CentOSBridgeVZAdapter(object):
         for line in fileinput.input(file_to_search):
             fd.write(line.replace(text_to_search, text_to_replace))
         fd.close()
+        if os == "ubuntu":
+            src_file = "/vz/private/" + base_config.ADS_SERVER_VM_ID + \
+                       base_adapter.OVPL_DIR_PATH + config.BRIDGE_NETWORK_SETUP_PATH + \
+                       "interfaces"
+            dest_file = "/vz/private/" + vm_id + "/etc/network/interfaces"
+        else:
+            src_file = base_adapter.OVPL_DIR_PATH + \
+                       config.BRIDGE_NETWORK_SETUP_PATH + "centos-interfaces"
+            dest_file = base_adapter.OVPL_DIR_PATH + \
+                        config.BRIDGE_NETWORK_SETUP_PATH + "ifcfg-eth0-interfaces"
 
-        src_file = "/vz/private/" + base_config.ADS_SERVER_VM_ID + \
-            base_adapter.OVPL_DIR_PATH + config.BRIDGE_NETWORK_SETUP_PATH + \
-            "interfaces"
-        dest_file = "/vz/private/" + vm_id + "/etc/network/interfaces"
         logger.debug("vm_id = %s, src_file=%s, dest_file=%s"
                      % (vm_id, src_file, dest_file))
         try:
@@ -130,6 +142,8 @@ class CentOSBridgeVZAdapter(object):
 
     def set_container_params(self, vm_id, vm_set_args):
         try:
+            vm_spec = self.get_vm_spec(lab_specz={})
+            os = vm_spec["os"]
             command = (r'ssh -o "%s" %s "%s set %s %s"' %
                        (base_config.NO_STRICT_CHECKING,
                         base_config.BASE_IP_ADDRESS,
@@ -138,7 +152,8 @@ class CentOSBridgeVZAdapter(object):
                          = %s" % command)
             (ret_code, output) = execute_command(command)
             if ret_code == 0:
-                return self.prepare_vm_for_bridged_network(vm_id)
+                
+                return self.prepare_vm_for_bridged_network(vm_id, os)
             else:
                 return False
         except Exception, e:
@@ -392,27 +407,25 @@ class CentOSBridgeVZAdapter(object):
             logger.error("ERROR = %s" % str(e))
             return False
 
-
+    def get_vm_spec(lab_specz):
+        lab_spec = dict2default(lab_specz)
+        vm_spec = {"lab_ID": lab_spec['lab']['description']['id'],
+                   "os": lab_spec['lab']['runtime_requirements']
+                   ['platform']['os'],
+                   "os_version": lab_spec['lab']['runtime_requirements']
+                   ['platform']['osVersion'],
+                   "ram": lab_spec['lab']['runtime_requirements']['platform']
+                   ['memory']['min_required'],
+                   "diskspace": lab_spec['lab']['runtime_requirements']
+                   ['platform']['storage']['min_required'],
+                   "swap": lab_spec['lab']['runtime_requirements']['platform']
+                   ['memory']['swap']
+        }
+        return vm_spec
     def construct_vzctl_args(self, lab_specz={}):
         """ Returns a tuple of vzctl create arguments and set arguments """
-        
-        def get_vm_spec():
-            lab_spec = dict2default(lab_specz)
-            vm_spec = {"lab_ID": lab_spec['lab']['description']['id'],
-                       "os": lab_spec['lab']['runtime_requirements']
-                                     ['platform']['os'],
-                       "os_version": lab_spec['lab']['runtime_requirements']
-                                             ['platform']['osVersion'],
-                       "ram": lab_spec['lab']['runtime_requirements']['platform']
-                                      ['memory']['min_required'],
-                       "diskspace": lab_spec['lab']['runtime_requirements']
-                                            ['platform']['storage']['min_required'],
-                       "swap": lab_spec['lab']['runtime_requirements']['platform']
-                                       ['memory']['swap']
-                      }
-            return vm_spec
-
-        vm_spec = get_vm_spec()
+        vm_spec = self.get_vm_spec(lab_specz)
+        logger.debug("vm_spec = %s" % vm_spec)
         lab_ID = get_test_lab_id() if vm_spec["lab_ID"] == "" else vm_spec["lab_ID"]
         host_name = lab_ID + "." + base_adapter.get_adapter_hostname()
         os_template = base_adapter.find_os_template(vm_spec["os"],
