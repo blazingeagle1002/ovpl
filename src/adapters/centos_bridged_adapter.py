@@ -46,7 +46,7 @@ IP_ADDRESS_REGEX = r"[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}"
 # IP_ADDRESS_REGEX =
 # "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$";
 IP_ADDRESS = None
-
+OS = None
 
 class InvalidVMIDException(Exception):
     def __init__(msg):
@@ -68,8 +68,8 @@ class CentOSBridgeVZAdapter(object):
     template file with the container IP_ADDRESS and then copying it to
     /etc/network/interfaces.
     """
-    def prepare_vm_for_bridged_network(self, vm_id, os):
-        if os == "ubuntu":
+    def prepare_vm_for_bridged_network(self, vm_id):
+        if OS == "ubuntu":
             src_file = base_adapter.OVPL_DIR_PATH + \
                        config.BRIDGE_NETWORK_SETUP_PATH + "bridge-settings"
             dest_file = base_adapter.OVPL_DIR_PATH + \
@@ -79,7 +79,6 @@ class CentOSBridgeVZAdapter(object):
                        config.BRIDGE_NETWORK_SETUP_PATH + "centos-interfaces"
             dest_file = base_adapter.OVPL_DIR_PATH + \
                         config.BRIDGE_NETWORK_SETUP_PATH + "ifcfg-eth0-interfaces"
-
         try:
             copy_command = "rsync -arz --progress " + src_file + " " + dest_file
             logger.debug("copy command = %s" % copy_command)
@@ -101,16 +100,16 @@ class CentOSBridgeVZAdapter(object):
         for line in fileinput.input(file_to_search):
             fd.write(line.replace(text_to_search, text_to_replace))
         fd.close()
-        if os == "ubuntu":
+        if OS == "ubuntu":
             src_file = "/vz/private/" + base_config.ADS_SERVER_VM_ID + \
                        base_adapter.OVPL_DIR_PATH + config.BRIDGE_NETWORK_SETUP_PATH + \
                        "interfaces"
             dest_file = "/vz/private/" + vm_id + "/etc/network/interfaces"
         else:
-            src_file = base_adapter.OVPL_DIR_PATH + \
-                       config.BRIDGE_NETWORK_SETUP_PATH + "centos-interfaces"
-            dest_file = base_adapter.OVPL_DIR_PATH + \
-                        config.BRIDGE_NETWORK_SETUP_PATH + "ifcfg-eth0-interfaces"
+            src_file = "/vz/private/" + base_config.ADS_SERVER_VM_ID + \
+                       base_adapter.OVPL_DIR_PATH + config.BRIDGE_NETWORK_SETUP_PATH + \
+                       "ifcfg-eth0-interfaces"
+            dest_file = "/vz/private/" + vm_id + "/etc/sysconfig/network-scripts/ifcfg-eth0"
 
         logger.debug("vm_id = %s, src_file=%s, dest_file=%s"
                      % (vm_id, src_file, dest_file))
@@ -142,8 +141,6 @@ class CentOSBridgeVZAdapter(object):
 
     def set_container_params(self, vm_id, vm_set_args):
         try:
-            vm_spec = self.get_vm_spec(lab_specz={})
-            os = vm_spec["os"]
             command = (r'ssh -o "%s" %s "%s set %s %s"' %
                        (base_config.NO_STRICT_CHECKING,
                         base_config.BASE_IP_ADDRESS,
@@ -152,8 +149,7 @@ class CentOSBridgeVZAdapter(object):
                          = %s" % command)
             (ret_code, output) = execute_command(command)
             if ret_code == 0:
-                
-                return self.prepare_vm_for_bridged_network(vm_id, os)
+                return self.prepare_vm_for_bridged_network(vm_id)
             else:
                 return False
         except Exception, e:
@@ -407,24 +403,27 @@ class CentOSBridgeVZAdapter(object):
             logger.error("ERROR = %s" % str(e))
             return False
 
-    def get_vm_spec(lab_specz):
-        lab_spec = dict2default(lab_specz)
-        vm_spec = {"lab_ID": lab_spec['lab']['description']['id'],
-                   "os": lab_spec['lab']['runtime_requirements']
-                   ['platform']['os'],
-                   "os_version": lab_spec['lab']['runtime_requirements']
-                   ['platform']['osVersion'],
-                   "ram": lab_spec['lab']['runtime_requirements']['platform']
-                   ['memory']['min_required'],
-                   "diskspace": lab_spec['lab']['runtime_requirements']
-                   ['platform']['storage']['min_required'],
-                   "swap": lab_spec['lab']['runtime_requirements']['platform']
-                   ['memory']['swap']
-        }
-        return vm_spec
+    
     def construct_vzctl_args(self, lab_specz={}):
         """ Returns a tuple of vzctl create arguments and set arguments """
-        vm_spec = self.get_vm_spec(lab_specz)
+        def get_vm_spec():
+            lab_spec = dict2default(lab_specz)
+            global OS
+            OS = lab_spec['lab']['runtime_requirements']['platform']['os']
+            vm_spec = {"lab_ID": lab_spec['lab']['description']['id'],
+                       "os": lab_spec['lab']['runtime_requirements']
+                       ['platform']['os'],
+                       "os_version": lab_spec['lab']['runtime_requirements']
+                       ['platform']['osVersion'],
+                       "ram": lab_spec['lab']['runtime_requirements']['platform']
+                       ['memory']['min_required'],
+                       "diskspace": lab_spec['lab']['runtime_requirements']
+                       ['platform']['storage']['min_required'],
+                       "swap": lab_spec['lab']['runtime_requirements']['platform']
+                       ['memory']['swap']
+                   }
+            return vm_spec
+        vm_spec = get_vm_spec()
         logger.debug("vm_spec = %s" % vm_spec)
         lab_ID = get_test_lab_id() if vm_spec["lab_ID"] == "" else vm_spec["lab_ID"]
         host_name = lab_ID + "." + base_adapter.get_adapter_hostname()
@@ -478,27 +477,21 @@ class CentOSBridgeVZAdapter(object):
 
 
 def test():
-    # vm_spec = VMSpec.VMSpec({'lab_ID': 'test99'})
     import json
-    lab_spec = json.loads(open("sample_lab_spec.json").read())
-    create_vm(lab_spec)
-    create_vm(lab_spec, "99100")
-    # create_vm(vm_spec, "99101")
-    # create_vm("99102", vm_spec)
-    # create_vm("99103", vm_spec)
-    destroy_vm("99100")
-    # destroy_vm("99101")
-    # destroy_vm("99102")
-    # destroy_vm("99103")
-
+    lab_spec = json.loads(open("sample.json").read())
+    inst = CentOSBridgeVZAdapter()
+    #inst.get_vm_spec(lab_specz = {})     
+    inst.create_vm(lab_spec, "99100")
+    #inst.prepare_vm_for_bridged_network("99100")                                                                                                       
+    #inst.destroy_vm("99100") 
 
 if __name__ == "__main__":
 
     # Start an HTTP server and wait for invocation
     # Parse the invocation command and route to
     # appropriate methods.
-    # test()
-    if copy_ovpl_source(584):
-        logger.debug("test Successful")
-    else:
-        logger.debug("test UNSuccessful")
+    test()
+    #if copy_ovpl_source(584):
+    #    logger.debug("test Successful")
+    #else:
+    #    logger.debug("test UNSuccessful")

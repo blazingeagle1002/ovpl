@@ -107,6 +107,9 @@ def find_os_template(os, os_version, supported_images):
 
     if os == 'UBUNTU' and os_version == '13':
         os_version = '13.04'
+    
+    if os == 'CENTOS' and os_version == '6':
+        os_version = '6.9'
 
     # filter the supported image list by the os and the by the version
     all_versions_of_os = filter(lambda x: x['os'] == os, supported_images)
