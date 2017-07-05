@@ -68,10 +68,10 @@ def test_lab(lab_src_url, version=None):
     logger.info("Environment https_proxy = %s" % os.environ["https_proxy"])
 
     def fill_aptconf(lab_spec):
-        os = str(lab_spec['lab']['runtime_requirements']['platform']['os'])
+        OS = str(lab_spec['lab']['runtime_requirements']['platform']['os'])
         http_proxy = os.environ["http_proxy"]
         https_proxy = os.environ["https_proxy"]
-        if os == "ubuntu":
+        if OS == "ubuntu":
             try:                
                 http_cmd = r'echo "Acquire::http::Proxy \"%s\";"%s' % (http_proxy, '>>/etc/apt/apt.conf')
                 https_cmd = r'echo "Acquire::https::Proxy \"%s\";"%s' % (https_proxy, '>>/etc/apt/apt.conf')
@@ -83,7 +83,7 @@ def test_lab(lab_src_url, version=None):
                 raise e
         else:
             try:
-                http_cmd = r'echo "proxy="%s' % (http_proxy, '>>/etc/yum.conf')
+                http_cmd = r'echo "proxy=%s"%s' % (http_proxy, '>>/etc/yum.conf')
                 (ret_code, output) = execute_command(http_cmd)
             except Exception, e:
                 logger.error("Writing to /etc/yum.conf failed with error: %s"
