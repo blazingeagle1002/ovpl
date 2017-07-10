@@ -70,7 +70,8 @@ class CentOSBridgeVZAdapter(object):
     """
     def prepare_vm_for_bridged_network(self, vm_id):
         
-        network_path = base_adapter.OVPL_DIR_PATH + config.BRIDGE_NETWORK_SETUP_PATH
+        network_path = base_adapter.OVPL_DIR_PATH + \
+                       config.BRIDGE_NETWORK_SETUP_PATH
 
         if OS == "ubuntu":
             src_file = network_path + "bridge-settings"
@@ -102,13 +103,11 @@ class CentOSBridgeVZAdapter(object):
         if OS == "ubuntu":
 
             src_file = "/vz/private/" + base_config.ADS_SERVER_VM_ID + \
-                       base_adapter.OVPL_DIR_PATH + config.BRIDGE_NETWORK_SETUP_PATH + \
-                       "interfaces"
+                       network_path + "interfaces"
             dest_file = "/vz/private/" + vm_id + "/etc/network/interfaces"
         else:
             src_file = "/vz/private/" + base_config.ADS_SERVER_VM_ID + \
-                       base_adapter.OVPL_DIR_PATH + config.BRIDGE_NETWORK_SETUP_PATH + \
-                       "ifcfg-eth0-interfaces"
+                       network_path + "ifcfg-eth0-interfaces"
             dest_file = "/vz/private/" + vm_id + "/etc/sysconfig/network-scripts/ifcfg-eth0"
 
         logger.debug("vm_id = %s, src_file=%s, dest_file=%s"
