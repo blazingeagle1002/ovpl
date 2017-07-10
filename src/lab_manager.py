@@ -26,7 +26,7 @@ class LabManager:
             if self.git.repo_exists(repo_name):
                 self.git.reset_repo(repo_name)
                 self.git.checkout_version(repo_name, version)
-                self.git.pull_repo(repo_name)
+                self.git.pull_repo(repo_name, version)
             else:
                 self.git.clone_repo(lab_src_url, repo_name)
                 self.git.checkout_version(repo_name, version)

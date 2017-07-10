@@ -59,9 +59,10 @@ class GitCommands:
             logger.error("Error Cloning the repository: " + str(e))
             raise e
 
-    def pull_repo(self, repo_name):
+    def pull_repo(self, repo_name, version):
         repo = self.git_clone_loc + repo_name
-        pull_cmd = "git --git-dir=%s/.git --work-tree=%s pull" % (repo, repo)
+        #pull_cmd = "git --git-dir=%s/.git --work-tree=%s pull" % (repo, repo)
+        pull_cmd = "git -C %s pull origin %s" % (repo, version)
         logger.debug("pull cmd: %s" % pull_cmd)
         try:
             (ret_code, output) = execute_command(pull_cmd)

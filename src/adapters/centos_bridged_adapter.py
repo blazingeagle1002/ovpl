@@ -69,16 +69,15 @@ class CentOSBridgeVZAdapter(object):
     /etc/network/interfaces.
     """
     def prepare_vm_for_bridged_network(self, vm_id):
+        
+        network_path = base_adapter.OVPL_DIR_PATH + config.BRIDGE_NETWORK_SETUP_PATH
+
         if OS == "ubuntu":
-            src_file = base_adapter.OVPL_DIR_PATH + \
-                       config.BRIDGE_NETWORK_SETUP_PATH + "bridge-settings"
-            dest_file = base_adapter.OVPL_DIR_PATH + \
-                        config.BRIDGE_NETWORK_SETUP_PATH + "interfaces"
+            src_file = network_path + "bridge-settings"
+            dest_file = network_path + "interfaces"
         else:
-            src_file = base_adapter.OVPL_DIR_PATH + \
-                       config.BRIDGE_NETWORK_SETUP_PATH + "centos-interfaces"
-            dest_file = base_adapter.OVPL_DIR_PATH + \
-                        config.BRIDGE_NETWORK_SETUP_PATH + "ifcfg-eth0-interfaces"
+            src_file = network_path + "centos-interfaces"
+            dest_file = network_path + "ifcfg-eth0-interfaces"
         try:
             copy_command = "rsync -arz --progress " + src_file + " " + dest_file
             logger.debug("copy command = %s" % copy_command)
@@ -101,6 +100,7 @@ class CentOSBridgeVZAdapter(object):
             fd.write(line.replace(text_to_search, text_to_replace))
         fd.close()
         if OS == "ubuntu":
+
             src_file = "/vz/private/" + base_config.ADS_SERVER_VM_ID + \
                        base_adapter.OVPL_DIR_PATH + config.BRIDGE_NETWORK_SETUP_PATH + \
                        "interfaces"

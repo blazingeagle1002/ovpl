@@ -83,15 +83,7 @@ def test_lab(lab_src_url, version=None):
                 raise e
         else:
             pass
-            """
-            try:
-                http_cmd = r'echo "proxy=%s"%s' % (http_proxy, '>>/etc/yum.conf')
-                (ret_code, output) = execute_command(http_cmd)
-            except Exception, e:
-                logger.error("Writing to /etc/yum.conf failed with error: %s"
-                             % (str(e)))
-                raise e
-            """
+
     def get_build_steps_spec(lab_spec):
         return {"build_steps": lab_spec['lab']['build_requirements']['platform']['build_steps']}
 
