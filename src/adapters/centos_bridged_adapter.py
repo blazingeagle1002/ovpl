@@ -74,10 +74,10 @@ class CentOSBridgeVZAdapter(object):
                        config.BRIDGE_NETWORK_SETUP_PATH
 
         if OS == "ubuntu":
-            src_file = network_path + "bridge-settings"
+            src_file = network_path + "ubuntu-interface"
             dest_file = network_path + "interfaces"
         else:
-            src_file = network_path + "centos-interfaces"
+            src_file = network_path + "centos-interface"
             dest_file = network_path + "ifcfg-eth0-interfaces"
         try:
             copy_command = "rsync -arz --progress " + src_file + " " + dest_file
