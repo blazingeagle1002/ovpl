@@ -195,7 +195,7 @@ class CentOSBridgeVZAdapter(object):
         success = success and self.copy_public_key(vm_id)
         success = success and self.copy_ovpl_source(vm_id)
         success = success and self.copy_lab_source(vm_id, lab_repo_name,
-                                              self.git.get_git_clone_loc())
+                                              self.git.nnget_git_clone_loc())
         success = success and self.start_vm_manager(vm_id)
         response = {"vm_id": vm_id, "vm_ip": IP_ADDRESS, "vm_port": base_config.VM_MANAGER_PORT}
                             
