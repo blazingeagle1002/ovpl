@@ -53,3 +53,5 @@ base_config.py
 authorized_users.py
 # private keys
 *.pem
+ubuntu-interface
+centos-interface
