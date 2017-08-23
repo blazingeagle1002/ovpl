@@ -20,7 +20,7 @@ This project is part of the Virtual Labs project by MHRD, India.
 from setuptools import setup
 
 requires = [
-    'tornado',
+    'tornado==4.3',
     'requests',
     'pymongo',
     'netaddr',
