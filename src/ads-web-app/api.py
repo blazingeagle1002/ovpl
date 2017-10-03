@@ -6,6 +6,7 @@ import requests
 import json
 from config import *
 import re
+import os
 
 api = Blueprint('APIs', __name__)
 
@@ -68,6 +69,7 @@ def index():
                                        + lab_url)
 
         try:
+            os.environ['NO_PROXY']="localhost"
             r = requests.post(ADS_URL, data=json.dumps(data), headers=headers)
             if r.status_code == 200:
                 if r.text == "Test failed: See log file for errors":
