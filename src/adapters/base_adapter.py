@@ -107,6 +107,9 @@ def find_os_template(os, os_version, supported_images):
 
     if os == 'UBUNTU' and os_version == '13':
         os_version = '13.04'
+
+    if os == 'UBUNTU' and os_version == '14':
+        os_version = '14.04'
     
     if os == 'CENTOS' and os_version == '6':
         os_version = '6.9'
