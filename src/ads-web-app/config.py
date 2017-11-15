@@ -1,10 +1,9 @@
 #Configure google id and secret key
-CONSUMER_KEY = "857206061842-11dem9m11firvs9164ig85q91vtnt8bd."\
-                "apps.googleusercontent.com"
-CONSUMER_SECRET = "WFEZLo8rTJ3uozckhIaNjQ5e"
+CONSUMER_KEY = "108110138830-k7p9bg01mm1j468g6rdmopaa13j1a6qf.apps.googleusercontent.com"
+CONSUMER_SECRET = "STbqt1Vlgs436omWj2Lv-unO"
 ADS_URL = "http://localhost:5000"
 ADS_SECRET_KEY= "defaultkey"
-APP_URL = "http://ads.virtual-labs.ac.in:8080"
+APP_URL = "http://local-ads.com:8080"
 # Configure your log paths
 LOG_FILE_DIRECTORY = 'logs'
 LOG_FILE = 'ads-web-app.log'
@@ -14,7 +13,5 @@ LOG_FILE = 'ads-web-app.log'
 LOG_LEVEL = 10
 
 AUTHORIZED_USERS = [
-    "kammari.sripathi@gmail.com",
-    "madhavipuliraju@gmail.com",
-    "heregoesnextemail@gmail.com"
+    "16101998ms@gmail.com"
 ]

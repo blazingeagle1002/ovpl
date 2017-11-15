@@ -6,6 +6,7 @@ import logging.handlers
 import os
 from __init__ import *
 from utils.envsetup import EnvSetUp
+from Queue import *
 
 env = EnvSetUp.Instance()
 used_loggers = {}
@@ -47,6 +48,7 @@ def log(arguments):
     lineno = arguments['lineno'][0]
     name = arguments['name'][0]
     message = arguments['msg'][0]
+    qmsg.put_msg(message)
     funcName = arguments['funcName'][0]
     logger = get_logger(name)
     fmt_string = "%(levelname)s: %(pathname)s:%(lineno)-4s-> %(message)s"
@@ -59,3 +61,16 @@ def log(arguments):
     record = logger.makeRecord(name, levelname, funcName, lineno,
                                fmt_string, record_format_args, None)
     logger.handle(record)
+
+class Message():
+    def __init__(self):
+        self.msg = Queue()
+    def get_msg(self):
+        if not self.msg.empty():
+            return self.msg.get()
+    def put_msg(self,mesg):
+        self.msg.put(mesg)
+    def q_emp(self):
+        return self.msg.empty()
+
+qmsg = Message()

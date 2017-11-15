@@ -30,6 +30,15 @@ class LogHandler(tornado.web.RequestHandler):
                              args=(self.request.arguments,))
         t.start()
 
+class TestHandler(tornado.web.RequestHandler):
+    def get(self):
+        if helper.qmsg.q_emp():
+            self.write("nth")
+        else:
+            self.write(helper.qmsg.get_msg())
+
+    def post(self):
+        pass
 
 class OtherHandler(tornado.web.RequestHandler):
     def get(self):
@@ -43,6 +52,7 @@ if __name__ == "__main__":
     app = tornado.web.Application(
         handlers=[
             (r"/log/.*", LogHandler),
+            (r"/test", TestHandler),
             (r"/.*", OtherHandler),
         ],
         debug=True)

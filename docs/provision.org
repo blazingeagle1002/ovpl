@@ -1,0 +1,205 @@
+#+TITLE: Provision ADS
+#+AUTHOR: VLEAD
+#+DATE: [2017-11-06 Mon]
+#+SETUPFILE: ./org-templates/level-0.org
+#+TAGS: boilerplate(b)
+#+EXCLUDE_TAGS: boilerplate
+#+OPTIONS: ^:nil
+
+* Introduction
+  This document describes how to provision and configure a
+  machine for ADS service.  Here provisioning implies
+  creation of machine and installation of all the necessary
+  software.  Configuration later configures settings to
+  enable the service. 
+
+
+* Machine
+  1. OS - CentOS 6.9
+  2. x86 64 bit architecture
+
+
+* Provisioning
+** Creation of machine
+   Machine with centos 6.9 operating system is assumed to be
+   available.  The machine is created in different ways on
+   different virtualizations.
+
+** Installation of Software
+   1. 
+
+
+* Settings for ADS 
+Execute the following steps, to configure and then run ADS as a service:
+
+** Edit the =ovpl/config/= directory
+   Copy =ovpl/config/sample_config.json= to =ovpl/config/config.json= and make
+   the following changes:
+      
+  + To set the proxies.
+#+begin_src example
+    "ENVIRONMENT": {
+        "HTTP_PROXY":"http://proxy. vlabs.ac.in:8080",
+        "HTTPS_PROXY":"http://proxy.vlabs.ac.in:8080"
+    },
+#+end_src
+
+  + if no proxies are used, 
+#+begin_src example
+    "ENVIRONMENT": {
+        "HTTP_PROXY":"",
+        "HTTPS_PROXY":""
+    },
+#+end_src
+
+ + Set the COOKIE_SECRET value in CONTROLLER_CONFIG to some long randomly
+    generated string.
+
+#+begin_src example
+"COOKIE_SECRET": "<generate a long random UUID>",
+#+end_src  
+
+  + Set the SERVER_IP in LOGSERVER_CONFIGURATION to the IP address of the
+machine on which the ADS services are running.
+#+begin_src example
+"LOGSERVER_CONFIGURATION": {
+            "SERVER_IP": "ads-server-private-ip",
+	    },
+#+end_src
+
+  + Choose =POOLID= and =ADAPTERID= from =VPOOLS= section. Make the appropriate change in =ADAPTER_TO_USE=.
+    The =ADAPTERID= for =aws_adapter=, =centos_openvz_adapter= and =centos_bridged_adapter= is 1, 2 and 3 
+    respectively.
+   
+#+begin_src example
+"ADAPTER_TO_USE" : {"POOLID" : 1, "ADAPTERID" : 2}
+#+end_src
+  
+** Settings for =base_config=
+   1. Copy =config/adapters/sample_base_config.py= to =config/adapters/base_config.py=. 
+      For =aws_adapter=, no change in this file has to be done. For =centos_openvz_adapter=
+      and =centos_bridged_adapter= make the following changes in the file:
+
+      1. If the services are running on the base machine,
+         set =ADS_ON_CONTAINER= to False and copy public key (id_rsa.pub) to authorized_keys
+
+      2. If the services are running on a container, set =ADS_ON_CONTAINER= to
+         True and copy the public key of the container to the authorized_keys
+         of the base machine. 
+
+      3. Set BASE_IP_ADDRESS = "root@<IP>" where IP is the ip address of
+         base machine on which containers are created.
+
+      4. Set ADS_SERVER_VM_ID to CTID of container running ADS.
+         ADS_SERVER_VM_ID = "<CTID>" 
+
+      5. SUBNET field to match with the subnet of your base machine
+         If the ip address of your base machine is 10.2.58.XXX, 
+         SUBNET = ["10.2.58.12/28"]
+
+      6. =ADAPTER_NAME_SERVER=, set the field to a specific nameserver that is
+         used in the cluster or leave it as 'inherit' to use the nameserver
+         configuration from the base machine.
+
+      7. =SECRET_KEY=, used to authenticate the ADS WEB APP.
+	 
+** Settings for =centos_bridged_adapter=
+   Copy =config/adapters/sample_centos_bridged_config.py= to =config/adapters/centos_bridged_config.py=,
+   and change the =SUBNET_BRIDGE= in the file.
+   
+** Settings for =centos_openvz_adapter=
+   - Copy =config/adapters/sample_centos_openvz_config.py= to
+     =config/adapters/centos_openvz_config.py=.
+** Settings for =aws_adapter=
+   Copy =config/adapters/sample_aws_config.py= to =config/adapters/aws_config.py=, and edit the values
+   accordingly. The private key =key_file_name.pem= should be copied inside =src/= directory.
+   See [[./docs/AWSAdapter.org][here]] for more details.
+   
+** Commands to Manage the Service
+   + As root, go into =ovpl= directory and run =manage_services.sh= file:
+#+BEGIN_EXAMPLE
+$ cd ovpl
+$ ./manage_services (or) ./manage_services start
+#+END_EXAMPLE
+
+   + To stop the services
+#+BEGIN_EXAMPLE
+$ cd ovpl
+$ ./manage_services stop
+#+END_EXAMPLE
+
+  + To stop or start specific service use =./manage_services.sh [action]
+    [services]=
+    - [action]   = start (or) stop
+    - [services] = LOGGER (or) ADAPTER (or) CONTROLLER
+
+#+begin_example
+$ cd ovpl
+$ ./manage_services.sh start LOGGER
+#+end_example
+
++ For more help use =./manage_services.sh --help=.
+
+** Setting up ADS-web-app
+*** Install dependencies
+    This assumes apache server is installed. If not, please install the apache
+    server.
+#+BEGIN_EXAMPLE
+sudo su -
+yum update -y
+yum install epel-release
+yum install "mod_wsgi" -y
+yum install python-pip
+cd /root/ovpl/src/ads-web-app
+python setup.py install
+
+rsync -avz --progress /root/ovpl/src/ads-web-app /var/www/html/
+chmod -R 777 /var/www/html/ads-web-app
+#+END_EXAMPLE
+
+*** Setup Google Oauth credentials
+    - Create a project at [[https://console.developers.google.com][Google Dashboard]] and create =Oauth= credentails.
+    - Provide =CONSUMER_KEY= and =CONSUMER_SECRET= in
+      =/var/www/html/ads-web-app/config.py=.
+#+BEGIN_SRC 
+CONSUMER_KEY = "<consumerkey>"
+CONSUMER_SECRET = "<consumer secret key>"
+
+#+END_SRC
+*** Setup ADS credentials
+    - Provide =ADS= running server IP/Domain name to variable =ADS_URL=.
+    - Set secret key of =ADS= server to variable =ADS_SECRET_KEY=.
+#+BEGIN_SRC 
+ADS_URL = "http://<ip/domain>:5000"
+ADS_SECRET_KEY= "defaultadskey"
+
+#+END_SRC
+    - Add emails ids to =AUTHORIZED_USERS=
+#+BEGIN_SRC 
+AUTHORIZED_USERS = [
+    "heregoesemail@gmail.com"
+]
+
+#+END_SRC
+
+*** Access =ADS= from browser
+   - Restart =Flask= server
+#+BEGIN_SRC 
+cd /var/www/html/ads-web-app/
+python app.py &
+#+END_SRC
+
+   - Open the location =http://ads-server-public-ip:8080= from the
+     browser and provide the lab id, lab sources url and version/tag.
+   - View the logs at /root/logs/ovpl.log by
+#+begin_src example
+tail -f /root/logs/ovpl.log
+#+end_src
+
+
+** Other related documentation:
+Steps to manually create a container
+-----
+1. vzctl create 101 --ostemplate ubuntu-12.04-custom-x86_64 --ipadd 10.2.58.3 --diskspace 10G:15.0G --hostname cse02.vlabs.ac.in
+2. vzctl start 101
+3. vzctl set 101 --nameserver inherit --ram 256M --swap 512M --onboot yes --save

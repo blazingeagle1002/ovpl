@@ -3,7 +3,12 @@ from api import *
 from config import LOG_FILE_DIRECTORY
 from config import LOG_FILE
 from config import LOG_LEVEL
-import os
+from tornado import websocket, web, ioloop,httpserver,gen
+from tornado.wsgi import WSGIContainer
+from tornado.web import FallbackHandler, RequestHandler, Application
+import os, json,requests
+
+cl = []
 
 def create_app():
     # init our app
@@ -39,7 +44,37 @@ def configure_logging(app):
     app.logger.addHandler(log_handler)
     app.logger.setLevel(log_level)
 
+class SocketHandler(websocket.WebSocketHandler):
+    def check_origin(self, origin):
+        return True
+
+    def open(self):
+        if self not in cl:
+            cl.append(self)
+
+    def on_close(self):
+        if self in cl:
+            cl.remove(self)
+
+
+def send_msgs():
+    hello={
+        "value":"Ping"
+    }
+#    r = requests.get("http://localhost:7777/test")
+    [client.write_message(hello) for client in cl]
+
 #+NAME: run_server
 if __name__ == "__main__":
     app = create_app()
-    app.run(debug=True, host='0.0.0.0', threaded=True, port=8080)
+    tr = WSGIContainer(app)
+    run_app = Application(
+        handlers = [
+            (r"/ws", SocketHandler),
+            (r".*", FallbackHandler, dict(fallback=tr)),
+        ],
+        debug=True)
+    run = httpserver.HTTPServer(run_app)
+    run.listen(8080)
+    ioloop.PeriodicCallback(send_msgs, 1000).start()
+    ioloop.IOLoop.instance().start()

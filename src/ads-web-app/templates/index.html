@@ -27,4 +27,33 @@
 
 </div>
 
+<div id="msg" style="position:absolute;top:30%">
+</div>
+
+<script>
+    var host = window.location.host;
+    var ws = new WebSocket('ws://'+host+'/ws');
+
+    ws.onopen = function(){
+	console.log("opened")
+    };
+    
+    ws.onmessage = function(ev){
+        var json = JSON.parse(ev.data);
+        var html = document.getElementById("msg").innerHTML;
+        html += "<p>" + json.value + "</p>";
+        console.log(html);
+        document.getElementById("msg").innerHTML = html;
+    };   
+    
+    ws.onclose = function(ev){
+	console.log("closed")
+    };
+    
+    ws.onerror = function(ev){
+	console.log("error")
+    };
+
+</script>
+
 {% endblock %}
